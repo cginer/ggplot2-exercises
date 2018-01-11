@@ -1,0 +1,279 @@
+---
+title: "Introduction to `ggplot2`"
+author: "Carla Giner Delgado"
+date: "January 12, 2018"
+output:
+  html_document:
+    toc: true
+bibliography: bibliography.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.show = "hold")
+```
+
+Overview of the basics and underlying structure of the `R` graphical package `ggplot2` [@Wickham2010].
+
+This document is written in an `R Markdown` and allows `R` code chunks to be interleaved with `Markdown` formatted text (more info about [`R Markdown`](http://rmarkdown.rstudio.com), and about [`Markdown`](http://rmarkdown.rstudio.com/authoring_pandoc_markdown.htm)).
+
+
+
+Components of `ggplot2` 
+=======================
+
+The syntax of `ggplot2` is based on _The Grammar of Graphics_ [@Wilkinson2010], and each plot can be obtained by a series of _specifications_, that are given as _layers_. Let's have a quick look to the different parts. [Full reference](http://ggplot2.tidyverse.org/reference/index.html).
+
+```{r load_package}
+# install.packages("ggplot2") # If needed, install ggplot2
+library(ggplot2) # Load the package
+```
+
+
+Tidy data set
+-------------
+
+First of all, `ggplot2` expects a tidy data frame as input. The format needs to be in a long layout (opposed to a wide layout). Long data has one observation per row and one variable per column:
+
+Student | Programming language | Knowledge
+--------|----------------------|-----------
+John    | R                    | 3 High
+John    | C                    | 1 Low
+Mary    | R                    | 2 Medium
+Mary    | C                    | 3 High
+
+
+The same information in a wide layout (not suitable for `ggplot2`) would be:
+
+Student | R        | C        
+--------|----------|-------
+John    | 3 High   | 1 Low
+Mary    | 2 Medium | 3 High
+
+
+We will use a simple data frame with these data to test `ggplot2` commands. Later, we will use real-life (although tidy) data sets in the [examples](#expression).
+
+```{r simple_data}
+programming_level <- data.frame(
+    student = c("John", "John", "Mary", "Mary"),
+    programming_language = c("R", "C", "R", "C"),
+    knowledge = c(3, 1, 2, 3)
+    )
+```
+
+Plot calls start with `ggplot(data = <data>)` and then extra specifications are added using the sign `+`.
+
+
+Geoms and aesthetic mapping to variables
+----------------------------------------
+
+The main layers tell `ggplot` what variables from the data to represent and how are they going to be represented.
+
+We typically add a layer with a `geom_*()` function. There are geoms (geometric objects) to represent common graphs such as points, lines, bars, polygons or text. Each geom has a set of aesthetic attributes (x position, y position, colour, shape...) that can be mapped to variables in our data through the function parameter `mapping`, using the function `aes()`.
+
+```{r geom_examples, fig.height = 3, fig.width = 4}
+# Scatterplot
+ggplot(data = programming_level) +
+    geom_point(mapping = aes(x = student, y = knowledge, shape = programming_language))
+
+# Heatmap
+ggplot(data = programming_level) +
+    geom_tile(mapping = aes(x = student, y = programming_language, fill = knowledge))
+```
+
+Aesthetics can also be modified for all observations by calling them outside of the `aes()` function.
+
+```{r constant_aes, fig.height = 3, fig.width = 4}
+# Scatterplot
+ggplot(data = programming_level) +
+    geom_point(mapping = aes(x = student, y = knowledge, shape = programming_language), alpha = 0.5, size = 5)
+
+# Heatmap
+ggplot(data = programming_level) +
+    geom_tile(mapping = aes(x = student, y = programming_language, fill = knowledge), colour = "white", size = 5)
+```
+
+Type `?geom_*` (function help) in order to know what aesthetics the geom can take.
+
+
+Stats and position adjustment
+-----------------------------
+
+Statistical transformations of the variables (e.g. represent counts of each value) and the adjustment of the position can also be specified in the geom function with the parameters `stat` and `position`. Alternatively we can use `geom_*()` functions for common representations that have already the required transformations and position adjustments as defaults.
+
+For example, to make a histogram we can change the statistical transformation and the position of `geom_bar()` or we can use the function `geom_histogram()`, that has the right defaults for `stat` and `position`.
+
+```{r stat_position, fig.height = 3, fig.width = 4, message = FALSE}
+# geom_bar
+ggplot(data = programming_level) +
+    geom_bar(aes(x = knowledge), stat = "bin", position = "stack")
+
+# genom_histogram
+ggplot(data = programming_level) +
+    geom_histogram(aes(x = knowledge))
+```
+
+Basic position values:  
+
+* identity: Don't adjust position
+* stack: Stack overlapping objects on top of each another
+* dodge: Dodge overlapping objects side-to-side
+* nudge: Nudge points a fixed distance
+* jitter: Jitter points to avoid overplotting
+
+
+Scales
+------
+
+The values taken by the aesthetics mapped to variables can be controlled by another set of functions called `scale_<aesthetic>_<name>`. [All available scales](http://ggplot2.tidyverse.org/reference/index.html#section-scales)
+
+```{r scales, fig.height = 3, fig.width = 4}
+# Scatterplot
+ggplot(data = programming_level) +
+    geom_point(mapping = aes(x = student, y = knowledge, shape = programming_language)) + 
+    scale_shape_manual(values = c(3, 8))+
+    scale_y_continuous(breaks = c(1, 2, 3), labels = c("Low", "Medium", "High"), name = "Programming level")
+
+# Heatmap
+ggplot(data = programming_level) +
+    geom_tile(mapping = aes(x = student, y = programming_language, fill = as.factor(knowledge))) +
+    scale_fill_brewer(type = "seq", palette = "Greens", name  = "Level", labels = c("Low", "Medium", "High"))
+
+```
+
+There are some helper functions for common tasks.
+
+* `labs()`: set axes titles, plot title, subtitle...
+* `lims()`: set axis limits
+
+```{r labs, fig.height = 3, fig.width = 4}
+# Scatterplot
+ggplot(data = programming_level) +
+    geom_point(mapping = aes(x = student, y = knowledge, shape = programming_language)) + 
+    scale_shape_manual(values = c(3, 8))+
+    scale_y_continuous(breaks = c(1, 2, 3), labels = c("Low", "Medium", "High"), name = "Programming level") +
+    labs(shape = "Language", title = "Programming knowledge", x = "Student name")
+
+# Heatmap
+ggplot(data = programming_level) +
+    geom_tile(mapping = aes(x = student, y = programming_language, fill = as.factor(knowledge))) +
+    scale_fill_brewer(type = "seq", palette = "Greens", name  = "Level", labels = c("Low", "Medium", "High")) +
+    labs(y = "Programming language", title = "Programming knowledge")
+```
+
+
+Coordinates
+-----------
+
+There are two coordinates systems available:
+
+* Cartesian, the default. Some `coord_*()` functions can modify the system slightly (e.g. swap axes with `coord_flip()`).
+* Polar, using the function `coord_polar()`.
+
+```{r polar, fig.height = 3, fig.width = 4}
+# Scatterplot
+ggplot(data = programming_level) +
+    geom_point(mapping = aes(x = student, y = knowledge, shape = programming_language)) + 
+    scale_shape_manual(values = c(3, 8))+
+    scale_y_continuous(breaks = c(1, 2, 3), labels = c("Low", "Medium", "High"), name = "Programming level") +
+    labs(shape = "Language", title = "Programming knowledge", x = "Student name") +
+    coord_polar()
+
+# Heatmap
+ggplot(data = programming_level) +
+    geom_tile(mapping = aes(x = student, y = programming_language, fill = as.factor(knowledge))) +
+    scale_fill_brewer(type = "seq", palette = "Greens", name  = "Level", labels = c("Low", "Medium", "High")) +
+    labs(y = "Programming language", title = "Programming knowledge") +
+    coord_polar()
+```
+
+
+
+Facets
+------
+
+We can also create a set of subplots using variables from the data. It is especially useful when representing many variables. There are two functions available `facet_grid()` and `facet_wrap()`.
+
+```{r facets, fig.height = 3, fig.width = 4}
+ggplot(data = programming_level) +
+    geom_bar(mapping = aes(x = student, y = knowledge), stat = "identity") + 
+    scale_y_continuous(breaks = c(1, 2, 3), labels = c("Low", "Medium", "High"), name = "Programming level") +
+    labs(title = "Programming knowledge", x = "Student name") +
+    facet_grid(.~programming_language)
+```
+
+
+
+Themes
+------
+
+Themes control how the elements of the plot are represented (excluding the data themselves). The default theme can be substituted by another (e.g. `theme_classic()`) or individual elements of the theme can be modified with the function `theme()` (`?theme` for the list of plot elements).
+
+```{r themes, fig.height = 3, fig.width = 4}
+# Scatterplot
+ggplot(data = programming_level) +
+    geom_point(mapping = aes(x = student, y = knowledge, shape = programming_language)) + 
+    scale_shape_manual(values = c(3, 8))+
+    scale_y_continuous(breaks = c(1, 2, 3), labels = c("Low", "Medium", "High"), name = "Programming level") +
+    labs(shape = "Language", title = "Programming knowledge", x = "Student name") +
+    theme_classic(base_size = 16)
+
+# Heatmap
+ggplot(data = programming_level) +
+    geom_tile(mapping = aes(x = student, y = programming_language, fill = as.factor(knowledge))) +
+    scale_fill_brewer(type = "seq", palette = "Greens", name  = "Level", labels = c("Low", "Medium", "High")) +
+    labs(y = "Programming language", title = "Programming knowledge") + 
+    theme(legend.position = "left")
+```
+
+
+Real-life example: Gene expression {#expression}
+==================================
+
+Data set
+--------
+
+[GTEx](https://gtexportal.org/home/) median gene expression values in TMP for 8 tissues and 54225 genes.
+
+```{r read_data}
+# Median expression values
+expression_data<-read.table(file = "data/expression_data.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+expression_data$Expressed <- expression_data$median_expression > 0
+
+ggplot(expression_data) + 
+    geom_line(aes(tissue, median_expression, group = gene_id), alpha = 0.01)+
+    # geom_boxplot(aes(tissue, median_expression, fill = gene_type ))+
+    scale_y_log10()+
+    facet_grid(gene_type~gene_annotation)
+
+
+ggplot(expression_data) + 
+    # geom_line(aes(tissue, median_expression, group = gene_id), alpha = 0.001)+
+    geom_boxplot(aes(gene_type, median_expression, fill = tissue))+
+    scale_y_log10()#+
+    #facet_grid(gene_type~.)
+
+```
+
+
+Types of genes
+--------------
+- Which kind of genes did each annotation source annotate?
+- Which are more expressed (median)
+
+
+Expressed genes
+---------------
+- Which tissue has the greatest number of genes expressed?
+
+
+
+Constitutive genes
+------------------
+- What genes are expressed at >100 TPM?
+
+
+
+
+
+References
+==========
