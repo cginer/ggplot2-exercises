@@ -1,6 +1,13 @@
-# Introduction to `ggplot2`
-Carla Giner Delgado  
-January 12, 2018  
+---
+title: "Introduction to `ggplot2`"
+author: "Carla Giner Delgado"
+date: "January 12, 2018"
+output:
+  html_document:
+    keep_md : true
+    toc: true
+bibliography: bibliography.bib
+---
 
 
 
@@ -182,7 +189,7 @@ There are two coordinates systems available:
 # Scatterplot
 ggplot(data = programming_level) +
     geom_point(mapping = aes(x = student, y = knowledge, shape = programming_language)) + 
-    scale_shape_manual(values = c(3, 8))+
+    scale_shape_manual(values = c(3, 8)) +
     scale_y_continuous(breaks = c(1, 2, 3), labels = c("Low", "Medium", "High"), name = "Programming level") +
     labs(shape = "Language", title = "Programming knowledge", x = "Student name") +
     coord_polar()
@@ -227,7 +234,7 @@ Themes control how the elements of the plot are represented (excluding the data 
 # Scatterplot
 ggplot(data = programming_level) +
     geom_point(mapping = aes(x = student, y = knowledge, shape = programming_language)) + 
-    scale_shape_manual(values = c(3, 8))+
+    scale_shape_manual(values = c(3, 8)) +
     scale_y_continuous(breaks = c(1, 2, 3), labels = c("Low", "Medium", "High"), name = "Programming level") +
     labs(shape = "Language", title = "Programming knowledge", x = "Student name") +
     theme_classic(base_size = 16)
@@ -236,16 +243,8 @@ ggplot(data = programming_level) +
 ggplot(data = programming_level) +
     geom_tile(mapping = aes(x = student, y = programming_language, fill = as.factor(knowledge))) +
     scale_fill_brewer(type = "seq", palette = "Greens", name  = "Level", labels = c("Low", "Medium", "High")) +
-    labs(y = "Programming language", title = "Programming knowledge") #+ 
+    labs(y = "Programming language", title = "Programming knowledge") + 
     theme(legend.position = "left")
-```
-
-```
-## List of 1
-##  $ legend.position: chr "left"
-##  - attr(*, "class")= chr [1:2] "theme" "gg"
-##  - attr(*, "complete")= logi FALSE
-##  - attr(*, "validate")= logi TRUE
 ```
 
 ![](ggplot2_introduction_files/figure-html/themes-1.png)![](ggplot2_introduction_files/figure-html/themes-2.png)
