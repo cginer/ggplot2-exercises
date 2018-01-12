@@ -53,8 +53,18 @@ selected_types <- c("lincRNA", "rRNA","snoRNA","antisense","miRNA","protein_codi
 expression_data_small<-expression_data_3[expression_data_3$tissue %in% selected_tissues & expression_data_3$gene_type %in% selected_types, ]
 expression_data_small$tissue <- factor(expression_data_small$tissue, labels = c("Adipose","Brain","Lymphocytes","Liver","Lung","Muscle","Stomach","Testis"))
 
+# Order rows by chromosome and position
+expression_data_small$gene_chr<-factor(expression_data_small$gene_chr,levels=c(as.character(1:22),"X","Y"))
+expression_data_small<-expression_data_small[order(expression_data_small$gene_chr, expression_data_small$gene_start),]
+
 write.table(expression_data_small, file = "expression_data.txt", sep = "\t", row.names = FALSE, quote = FALSE)
 
+# Make 10% of the data just in case... ~ 5000 genes
+set.seed(49)
+selected_random_genes<-sample(unique(expression_data_small$gene_id),5000,replace=FALSE)
+
+expression_data_tiny<-expression_data_small[expression_data_small$gene_id %in% selected_random_genes, ]
+write.table(expression_data_tiny, file = "expression_data_tiny.txt", sep = "\t", row.names = FALSE, quote = FALSE)
 ```
 
 
