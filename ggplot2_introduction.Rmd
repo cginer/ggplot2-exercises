@@ -4,6 +4,7 @@ author: "Carla Giner Delgado"
 date: "January 12, 2018"
 output:
   html_document:
+    keep_md : true
     toc: true
 bibliography: bibliography.bib
 ---
@@ -50,7 +51,7 @@ John    | 3 High   | 1 Low
 Mary    | 2 Medium | 3 High
 
 
-We will use a simple data frame with these data to test `ggplot2` commands. Later, we will use real-life (although tidy) data sets in the [examples](#expression).
+We will use a simple data frame with these data to test `ggplot2` commands. Later, we will use a real-life (although tidy) data set in the [examples](#expression).
 
 ```{r simple_data}
 programming_level <- data.frame(
@@ -221,57 +222,131 @@ ggplot(data = programming_level) +
 ggplot(data = programming_level) +
     geom_tile(mapping = aes(x = student, y = programming_language, fill = as.factor(knowledge))) +
     scale_fill_brewer(type = "seq", palette = "Greens", name  = "Level", labels = c("Low", "Medium", "High")) +
-    labs(y = "Programming language", title = "Programming knowledge") + 
+    labs(y = "Programming language", title = "Programming knowledge") #+ 
     theme(legend.position = "left")
 ```
 
 
-Real-life example: Gene expression {#expression}
-==================================
+Real-life example gene expression {#expression}
+==========================
 
 Data set
 --------
-
-[GTEx](https://gtexportal.org/home/) median gene expression values in TMP for 8 tissues and 54225 genes.
+Human gene expression from [GTEx Project](https://gtexportal.org/home/). We have a table with the median gene expression values in TMP for 8 selected tissues and 54225 genes. There are also other details about the tissue and the genes.
 
 ```{r read_data}
-# Median expression values
 expression_data<-read.table(file = "data/expression_data.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-expression_data$Expressed <- expression_data$median_expression > 0
 
-ggplot(expression_data) + 
-    geom_line(aes(tissue, median_expression, group = gene_id), alpha = 0.01)+
-    # geom_boxplot(aes(tissue, median_expression, fill = gene_type ))+
-    scale_y_log10()+
-    facet_grid(gene_type~gene_annotation)
-
-
-ggplot(expression_data) + 
-    # geom_line(aes(tissue, median_expression, group = gene_id), alpha = 0.001)+
-    geom_boxplot(aes(gene_type, median_expression, fill = tissue))+
-    scale_y_log10()#+
-    #facet_grid(gene_type~.)
+# If too big, load a 5000-gene table
+# expression_data<-read.table(file = "data/expression_data_tiny.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
 
 ```
 
+Data set structure (variables, variable types, values...).
+
+```{r str}
+str(expression_data)
+```
+
+The data frame is already in a long format (each gene appears 8 times, 1 for tissue).
 
 Types of genes
 --------------
-- Which kind of genes did each annotation source annotate?
-- Which are more expressed (median)
+There are different types of genes in the data set. Which are the most abundant types?
+Represent the abundance of each of them in a bar plot.
+
+```{r types_genes}
+# We can subset the data frame and use only one tissue, because all the eight tissues have the same genes.
+expression_data_brain<-expression_data[expression_data$tissue %in% "Brain", ]
+
+# Then we can just count how many genes of each type are in the data set
+table(expression_data_brain$gene_type)
+
+# To represent the abundance of each type we can use a geom_bar, that uses by default the "count" stat. 
+# -----
+ggplot(expression_data_brain) +
+    geom_bar(mapping = aes(x = gene_type))
+# -----
+```
+
+Gene annotations come from two sources, Havana Project and Ensembl. Which gene types come from each source?
+Map gene_annotation variable to fill, colour or alpha. You can customise the scale of the aesthetic with a `scale_*` function.
+
+```{r annotation_source}
+# ----
+ggplot(expression_data_brain) +
+    geom_bar(mapping = aes(x = gene_type, fill = gene_annotation))
+# ----  
+```
 
 
-Expressed genes
----------------
-- Which tissue has the greatest number of genes expressed?
+Number of expressed genes per tissue
+------------------------------------
+Each tissue may express a different number of genes. Which tissue expresses more genes?
+Represent the proportions of genes expressed/not expressed in each tissue.
+```{r expressed_genes}
+# We can create an extra simple variable indicating if the gene is expressed or not as TRUE/FALSE
+expression_data$expressed <- expression_data$median_expression > 0
+
+# ----
+ggplot(expression_data) +
+    geom_bar(aes(x = tissue, fill = expressed), position = "fill")
+
+# Alternative, use only TRUE
+ggplot(expression_data[expression_data$expressed,]) + 
+    geom_point(aes(x = tissue), stat="count")
+
+# Showing also the different types of genes
+ggplot(expression_data[expression_data$expressed,]) + 
+    geom_point(aes(x = gene_type,colour=tissue), stat="count")
+# ----
+
+```
+
+The differences in abundance are the same for different types of genes?
+You can use only the rows with expressed genes in the data set and represent the variables gene_type and tissue with different aesthetics.
 
 
+Genes of interest
+----------------
+Choose a handful of genes and analyse their expression pattern. Examples: "HLA_B", "SOX2", "BRCA2".
+You can use lines to link expression of the same gene in different tissues (you will need to specify that you want to group by gene).
 
-Constitutive genes
-------------------
-- What genes are expressed at >100 TPM?
+```{r genes_interest}
+genes<-c("HLA-B","BFAR","C19orf48")
+# We can create a smaller data frame with the selected genes
+expression_genes<-expression_data[expression_data$gene_name %in% genes, ]
+
+# ---
+ggplot(expression_genes) +
+    geom_line(aes(tissue,median_expression,colour=gene_name,group=gene_name))+scale_y_log10()
+# ---
+```
 
 
+Genes highly expressed in brain
+-------------------------------
+Constitutive genes and genes with an important function in the brain may be highly expressed. Which are the most expressed genes in the brain?
+You can represent chromosomes against expression.
+
+```{r genes_brain}
+# To set the order of the chromosomes
+expression_data_brain$gene_chr<-factor(expression_data_brain$gene_chr,levels=c(as.character(1:22),"X","Y","M"))
+
+# ----
+ggplot(expression_data_brain) + 
+    geom_point(aes(gene_start, median_expression, colour = median_expression >500))+
+    scale_y_log10()+
+    facet_grid(.~gene_chr,scales = "free_x",space = "free_x")
+# ----
+```
+
+You can locate the position of the genes within the chromosome using `gene_start` together with `gene_chr` using facets, for instance.
+
+
+Median expression per tissue and gene type
+------------------------------------------
+Create a plot showing the median expression (and possibly the distribution) for each type of gene in each of the 8 tissues. Edit scales, font sizes, theme, labels and legend to create a publication-quality graphic.
 
 
 
